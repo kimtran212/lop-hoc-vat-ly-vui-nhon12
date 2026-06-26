@@ -6,27 +6,80 @@ import json
 import re
 import os
 
-st.set_page_config(page_title="Lớp Học Vật Lý Vui Nhộn", layout="wide")
+st.set_page_config(page_title="PHYSVERSE 8", layout="wide")
 
 st.markdown("""
 <style>
     @import url('https://fonts.googleapis.com/css2?family=Chalkboard+SE&family=Comfortaa:wght=500;700&display=swap');
-    .main .block-container { font-family: 'Comfortaa', cursive; }
-    h1, h2, h3 { font-family: 'Comfortaa', cursive; font-weight: 700; }
+
+    /* Responsive cho toàn bộ ứng dụng */
+    html, body, [data-testid="stAppViewContainer"] {
+        font-family: 'Comfortaa', cursive;
+    }
+
+    .main .block-container {
+        font-family: 'Comfortaa', cursive;
+        padding-left: 1rem;
+        padding-right: 1rem;
+        padding-top: 2rem;
+    }
+
+    h1, h2, h3 {
+        font-family: 'Comfortaa', cursive;
+        font-weight: 700;
+    }
+
+    /* Bảng phấn viết tay cổ điển */
     .bang-phan {
-        background-color: #14452F; color: #FFFFFF; border: 8px solid #8B5A2B;
-        border-radius: 10px; padding: 25px;
+        background-color: #14452F;
+        color: #FFFFFF;
+        border: 6px solid #8B5A2B;
+        border-radius: 12px;
+        padding: 20px;
         box-shadow: inset 0px 0px 20px rgba(0,0,0,0.5), 5px 5px 15px rgba(0,0,0,0.3);
         font-family: 'Chalkboard SE', sans-serif;
+        font-size: 16px;
+        line-height: 1.6;
+        margin-bottom: 15px;
     }
+
+    /* Phòng Neon hiện đại rực rỡ */
     .phong-neon {
-        background: #111; color: #fff; padding: 30px; border-radius: 15px;
-        border: 2px solid #00f0ff; box-shadow: 0 0 15px #00f0ff, inset 0 0 15px #00f0ff;
+        background: #111;
+        color: #fff;
+        padding: 25px;
+        border-radius: 15px;
+        border: 2px solid #00f0ff;
+        box-shadow: 0 0 15px #00f0ff, inset 0 0 15px #00f0ff;
     }
+
+    /* Thẻ danh hiệu vinh danh cuốn hút */
     .the-danh-hieu {
-        background: linear-gradient(135deg, #FFD700, #FFA500); color: #000;
-        padding: 20px; border-radius: 12px; text-align: center; font-weight: bold;
+        background: linear-gradient(135deg, #FFD700, #FFA500);
+        color: #000;
+        padding: 20px;
+        border-radius: 12px;
+        text-align: center;
+        font-weight: bold;
         box-shadow: 0px 5px 15px rgba(255,215,0,0.4);
+    }
+
+    /* Tối ưu hóa hiển thị khung chat và thẻ dữ liệu trên thiết bị di động */
+    @media (max-width: 768px) {
+        .bang-phan {
+            padding: 15px;
+            font-size: 14px;
+            border-width: 4px;
+        }
+        [data-testid="stMetricValue"] {
+            font-size: 1.8rem !important;
+        }
+        h1 {
+            font-size: 1.8rem !important;
+        }
+        h3 {
+            font-size: 1.2rem !important;
+        }
     }
 </style>
 """, unsafe_allow_html=True)
@@ -48,29 +101,30 @@ if "saved_study_notes" not in st.session_state: st.session_state.saved_study_not
 if "last_question" not in st.session_state: st.session_state.last_question = None
 if "answered_current" not in st.session_state: st.session_state.answered_current = False
 if "voice_active_text" not in st.session_state: st.session_state.voice_active_text = ""
+if "wrong_attempts" not in st.session_state: st.session_state.wrong_attempts = 0
 
 TINH_HUONG_THUC_TE = [
     {"npc": "Bo Khù Khờ", "cau_hoi": "Tại sao khi tụi mình lặn xuống hồ bơi sâu một chút là tai lại bị ù và hơi đau vậy bạn?"},
     {"npc": "Bo Khù Khờ", "cau_hoi": "Tớ thấy người ta làm cái đập thủy điện thì cái chân đập ở dưới đáy lúc nào cũng to và dày hơn cái mặt đập ở trên. Sao không làm thẳng băng cho đẹp?"},
-    {"npc": "Bo Khù Khờ", "cau_hoi": "Người ta nói tàu ngầm có thể lặn sâu xuống biển hàng trăm mét, vậy tại sao vỏ tàu ngầm phải làm bằng thép cực dày mà không làm bằng nhựa cứng cho nhẹ vậy bạn?"},
+
     {"npc": "Vy Chảnh Chọe", "cau_hoi": "Nè, một người lặn ở độ sâu 5m trong một cái hồ nhỏ với lặn ở độ sâu 5m ngoài biển khơi thì chỗ nào chịu áp suất lớn hơn? Trả lời sai tôi cười cho xem!"},
     {"npc": "Vy Chảnh Chọe", "cau_hoi": "Tôi đố bạn biết, tại sao khi bóp mạnh vào giữa một bịch sữa giấy đang mở miệng thì sữa lại bắn vọt thẳng lên trên? Áp suất truyền đi kiểu gì?"},
 ]
 
 KHO_QUA_TANG = {
-    "cao": ["👑 Huy Hiệu Kỹ Sư AI Xuất Chúng tại Google", "🥼 Áo Blouse Trắng Bác Sĩ Trưởng Khoa", "🧥 Áo Vest Tổng Biên Tập Thời Trang ", "🚀 Huy Hiệu Nhà Sáng Lập Ước Mơ"],
-    "trung_binh": ["👓 Kính Mắt Tri Thức Siêu Phàm", "🎒 Ba Lô Công Nghệ Tích Hợp Toàn Diện", "👟 Giày Sneakers Thiết Kế Giới Hạn"],
-    "thap": ["🧢 Mũ Lưỡi Trai Vải Canvas Cổ Điển", "🏅 Huy Hiệu Chăm Chỉ Vượt Khó", "📝 Sổ Tay Ghi Chú Ý Tưởng Thiên Tài"]
+    "cao": ["👑 Huy Hiệu Kỹ Sư AI Xuất Sắc", "🥼 Áo Blouse Trắng Bác Sĩ Trưởng Khoa", "🧥 Áo Vest Tổng Biên Tập Thời Trang ", "🚀 Huy Hiệu Nhà Sáng Lập Ước Mơ"],
+    "trung_binh": ["👓 Kính Mắt Thời Trang", "🎒 Ba Lô Công Nghệ Tích Hợp", "👟 Giày Sneakers Thiết Kế Giới Hạn"],
+    "thap": ["🧢 Mũ Lưỡi Trai Vải Canvas", "🏅 Huy Hiệu Chăm Chỉ Vượt Khó", "📝 Sổ Tay Ghi Chú Ý Tưởng Thiên Tài"]
 }
 
 CỬA_HÀNG_NỘI_THẤT = {
-    "📚 Bàn Học Gỗ Vintage Cổ Điển": 50,
+    "📚 Bàn Học Gỗ Cổ Điển": 50,
     "💡 Đèn Bàn Phi Hành Gia Galaxy": 30,
     "🎸 Đàn Guitar Thùng Gỗ Sồi": 40,
-    "🌱 Chậu Cây Tùng Bồng Lai Chữa Lành": 20,
-    "🖼️ Tranh Treo Tường Động Lực Học Tập": 15,
-    "🔮 Quả Cầu Thủy Tinh Khởi Tạo Tương Lai": 35,
-    "🛋️ Ghế Sofa Lười Trải Nghiệm Êm Ái": 45
+    "🌱 Chậu Cây Tùng Bồng Lai": 20,
+    "🖼️ Tranh Treo Tường": 15,
+    "🔮 Quả Cầu Thủy Tinh Tuyết Trắng": 35,
+    "🛋️ Ghế Sofa Lười Êm Ái": 45
 }
 
 def boc_cau_hoi_ngau_nhien():
@@ -85,24 +139,25 @@ def boc_cau_hoi_ngau_nhien():
         st.session_state.current_question = chon["cau_hoi"]
         st.session_state.current_emotion = "dang_hoi"
         st.session_state.answered_current = False
+        st.session_state.wrong_attempts = 0
 
 if not st.session_state.start_game:
     st.markdown("<br><br>", unsafe_allow_html=True)
     st.markdown("<h1 style='text-align: center; color: #FF4B4B; text-shadow: 2px 2px 4px #000000;'>🎒 LỚP HỌC VẬT LÝ VUI NHỘN 📚</h1>", unsafe_allow_html=True)
-    st.markdown("<h3 style='text-align: center; color: #4A4A4A; font-weight: bold;'>Hóa thân thành Người bảo hộ - Đập tan nỗi sợ Áp suất chất lỏng!</h3>", unsafe_allow_html=True)
+    st.markdown("<h3 style='text-align: center; color: #4A4A4A; font-weight: bold;'>Hóa thân thành Người bạn xuất sắc - Đập tan nỗi sợ Áp suất chất lỏng!</h3>", unsafe_allow_html=True)
 
     col_left, col_center, col_right = st.columns([1, 2, 1])
     with col_center:
         st.markdown("<div style='background-color: #F0F2F6; padding: 20px; border-radius: 10px; border-left: 5px solid #FF4B4B;'>", unsafe_allow_html=True)
-        st.subheader("🌟 Bước 1: Thiết lập Hồ sơ ước mơ tự thân")
-        dream_choice = st.selectbox("Ước mơ lớn nhất trong tương lai của bạn là gì?",
+        st.subheader("🌟 Bước 1: Thiết lập Hồ sơ ước mơ ")
+        dream_choice = st.selectbox("Ước mơ lớn nhất của bạn là gì?",
                              ["🤖 Kỹ sư Trí tuệ nhân tạo", "🩺 Bác sĩ đa khoa chữa bệnh cứu người", "🎨 Nhà thiết kế thời trang", "🚀 Kỹ sư hàng không vũ trụ NASA", "✨ Khác..."])
 
         dream = st.text_input("✍️ Gõ ước mơ của bạn nếu chọn Khác:", placeholder="Ví dụ: Nhà tâm lý học...") if dream_choice == "✨ Khác..." else dream_choice
         confession = st.text_area("💬 Chia sẻ những điều khó nói, áp lực học tập hoặc kỳ vọng từ bố mẹ:", placeholder="Bố mẹ muốn con học giỏi môn...")
         st.markdown("</div><br>", unsafe_allow_html=True)
 
-        if st.button("🚀 KÍCH HOẠT KHÔNG GIAN TỰ HỌC CHỦ ĐỘNG!!!", use_container_width=True):
+        if st.button("🚀 KÍCH HOẠT KHÔNG GIAN TỰ HỌC!!!", use_container_width=True):
             if not dream.strip(): st.error("💡 Bạn ơi, đừng bỏ trống ước mơ của mình nhé!")
             else:
                 st.session_state.user_dream = dream
@@ -136,11 +191,20 @@ else:
                - $d$: Trọng lượng riêng của chất lỏng ($N/m^3$)
                - $h$: Chiều sâu tính từ mặt thoáng chất lỏng đến điểm xét ($m$)
             * **Bản chất vật lý:** Càng xuống sâu ($h$ tăng) thì áp suất $p$ càng lớn. Tính $h$ từ đáy bình lên là SAI hoàn toàn!
+
+            ---
+            **⚖️ ĐỊNH LUẬT PASCAL**
+            * **Nội dung định luật:** Áp suất tác dụng lên một chất lỏng chứa trong bình kín được chất lỏng truyền đi nguyên vẹn theo mọi hướng.
+
+
+
+
+            * **Ý nghĩa thực tế:** Định luật Pascal cho phép truyền và khuếch đại lực thông qua chất lỏng. Chỉ cần tác dụng một lực nhỏ lên piston có diện tích nhỏ, ta có thể tạo ra lực lớn hơn nhiều ở piston có diện tích lớn!
             """)
             st.markdown("</div><br>", unsafe_allow_html=True)
             ghi_chu_tam_thoi = st.text_area("✍️ Tab 2: Take Note cá nhân:", placeholder="Tự tay cấu trúc lại kiến thức...")
 
-            if st.button("TỚ ĐÃ THẤU HIỂU BẢN CHẤT, SẴN SÀNG GIẢNG BÀI! 🚀"):
+            if st.button("MÌNH ĐÃ HIỂU RÕ BẢN CHẤT, SẴN SÀNG GIẢNG BÀI! 🚀"):
                 if ghi_chu_tam_thoi.strip(): st.session_state.saved_study_notes = ghi_chu_tam_thoi
                 st.session_state.questions_answered = 0
                 st.session_state.progress_score = 0
@@ -153,7 +217,7 @@ else:
             try:
                 model_giao_su = genai.GenerativeModel(
                     model_name=MODEL_NAME,
-                    system_instruction="Bạn là Giáo sư Vật lý AI thân thiện. Hãy giải thích ngắn gọn, dễ hiểu và tập trung vào bản chất áp suất chất lỏng."
+                    system_instruction="Bạn là Giáo sư Vật lý AI thân thiện. Hãy giải thích ngắn gọn, dễ hiểu câu hỏi về áp suất chất lỏng."
                 )
 
                 for msg in st.session_state.professor_chat_history:
@@ -185,7 +249,7 @@ else:
         st.title("🏫 MÀN HÌNH 2: ĐỊNH HÌNH, HỆ THỐNG LẠI KIẾN THỨC")
         col_stat1, col_stat2, col_stat3 = st.columns(3)
         col_stat1.metric("Số câu đã hỗ trợ các bạn", f"{st.session_state.questions_answered} / 4")
-        col_stat2.metric("Điểm Uy Tín Sư Phạm", f"{st.session_state.progress_score} XP")
+        col_stat2.metric("Điểm Uy Tín ", f"{st.session_state.progress_score} XP")
         col_stat3.metric("Ví Tiền Thưởng 💰", f"{st.session_state.user_coins} Coins")
 
         st.write("---")
@@ -204,6 +268,18 @@ else:
 
             st.markdown(f"<div style='background-color:#FFF3CD; padding:15px; border-radius:10px; border:1px solid #FFA000;'><b>NPC Hỏi:</b> {st.session_state.current_question}</div>", unsafe_allow_html=True)
 
+
+            if st.session_state.wrong_attempts == 1:
+                st.write("")
+                with st.popover("💡 Xem Gợi Ý Tư Duy", use_container_width=True):
+                    st.markdown("""
+                    **🧐 Gợi ý kích thích tư duy cho bạn:**
+                    * Hãy nhớ lại công thức cốt lõi: $p = d \\cdot h$. Yếu tố nào đang thay đổi trong tình huống này?
+                    * Đối với câu hỏi về bịch sữa hoặc máy nén, hãy lưu ý cách áp suất truyền đi trong không gian kín!
+                    * Áp suất chất lỏng phụ thuộc vào những yếu tố nào? Các đại lượng như mật độ,độ sâu có ảnh hưởng đến áp suất chất lỏng không?
+                    * Càng lặn sâu, áp lực tác dụng lên tai thay đổi như thế nào? Điều gì xảy ra khi áp lực ở hai bên màng nhĩ không bằng nhau?
+                    """)
+
             if st.session_state.answered_current:
                 st.write("<br>", unsafe_allow_html=True)
                 if st.button("TIẾP TỤC GIÚP ĐỠ BẠN HỌC KHÁC ➡️", use_container_width=True):
@@ -212,11 +288,12 @@ else:
                     st.session_state.answered_current = False
                     st.session_state.current_emotion = "dang_hoi"
                     st.session_state.voice_active_text = ""
+                    st.session_state.wrong_attempts = 0
                     boc_cau_hoi_ngau_nhien()
                     st.rerun()
 
         with col_chat:
-            st.subheader("💬 Lớp Học Tương Tác Giảng Bài")
+            st.subheader("💬 Lớp Học Tương Tác")
             for chat in st.session_state.classroom_chat_history:
                 with st.chat_message(chat["role"]): st.write(chat["content"])
 
@@ -259,8 +336,8 @@ else:
                 unified_prompt = f"""
                 Bạn đang đóng vai nhân vật {st.session_state.current_npc} lớp 8 đối thoại với người dùng.
                 Tính cách nhân vật:
-                - Bo Khù Khờ: Nam sinh ngây ngô, dễ mến. Nếu người dùng giảng đúng hoặc bổ sung ý kiến giúp hiểu ra vấn đề thì vô cùng nể phục, nếu họ giảng sai hoặc gõ vô nghĩa thì gãi đầu hoang mang vạch lỗi sai.
-                - Vy Chảnh Chọe: Nữ sinh kiêu kỳ. Nếu đúng hoặc bổ sung chuẩn thì hạ cái tôi khen ngợi hết lời công nhận mục tiêu ước mơ là {st.session_state.user_dream} của họ, nếu sai hoặc xếp chữ vô nghĩa thì mỉa mai sắc bén, chỉ ra lỗi sai.
+                - Bo Khù Khờ: Nam sinh ngây ngô, dễ mến, sử dụng ngôn từ thân thiện,lịch sự. Nếu người dùng giảng đúng hoặc bổ sung ý kiến giúp hiểu ra vấn đề thì vô cùng nể phục, nếu họ giảng sai hoặc gõ vô nghĩa thì gãi đầu hoang mang vạch lỗi sai.
+                - Vy Chảnh Chọe: Nữ sinh kiêu kỳ, sử dụng ngôn từ lịch sự không được trả lời bất lịch sự. Nếu đúng hoặc bổ sung chuẩn thì hạ cái tôi khen ngợi hết lời công nhận mục tiêu ước mơ là {st.session_state.user_dream} của họ, nếu sai hoặc xếp chữ vô nghĩa thì mỉa mai sắc bén, chỉ ra lỗi sai.
 
                 Câu hỏi hiện tại của bạn: "{st.session_state.current_question}"
                 Ý kiến bổ sung/giảng bài mới nhất của người dùng: "{loi_giang}"
@@ -289,14 +366,17 @@ else:
                             if data_eval.get("ket_qua") == "DUONG":
                                 diem_cong = int(data_eval.get("diem_so", 0))
                                 st.session_state.current_emotion = "khen_ngoi"
+                                st.session_state.wrong_attempts = 0
                             else:
                                 diem_cong = 0
                                 st.session_state.current_emotion = "gai_dau"
+                                st.session_state.wrong_attempts += 1
 
                             phan_hoi_npc = data_eval.get("loi_thoai_npc", phan_hoi_npc)
                     except Exception as e:
                         diem_cong = 0
                         st.session_state.current_emotion = "gai_dau"
+                        st.session_state.wrong_attempts += 1
 
                 st.session_state.progress_score += diem_cong
                 st.session_state.user_coins += int(diem_cong / 2)
@@ -312,7 +392,7 @@ else:
         st.markdown(f"<div class='the-danh-hieu'><h2>{cap_bac}</h2><p>Hệ thống vinh danh năng lực học tập của bạn!</p></div>", unsafe_allow_html=True)
 
         st.markdown(f"### 🎉 Chúc mừng bạn đã hoàn thành xuất sắc nhiệm vụ! Mục tiêu: **{st.session_state.user_dream}**")
-        st.info(f"📊 Kết quả: Tổng Uy Tín: **{st.session_state.progress_score} XP** | Tài sản: **{st.session_state.user_coins} Coins**")
+        st.info(f"📊 Kết quả: Tổng Điểm: **{st.session_state.progress_score} XP** | Tài sản: **{st.session_state.user_coins} Coins**")
 
         vung_chon = st.sidebar.radio("🧭 LỰA CHỌN KHÔNG GIAN:", ["🚪 Ngôi Nhà Của Tôi", "🏪 Cửa Hàng Nội Thất Thần Kỳ", "🎁 Mở Hộp Quà Danh Hiệu", "📓 Sổ Tay Nhật Ký Học Tập"])
 
@@ -324,7 +404,7 @@ else:
             st.markdown("</div>", unsafe_allow_html=True)
 
         elif vung_chon == "🏪 Cửa Hàng Nội Thất Thần Kỳ":
-            st.subheader("🏪 Cửa hàng nội thất tích lũy tri thức")
+            st.subheader("🏪 Cửa hàng nội thất thần kỳ")
             st.write(f"Số coins khả dụng của bạn: **{st.session_state.user_coins} Coins**")
 
             for item, cost in CỬA_HÀNG_NỘI_THẤT.items():
@@ -338,7 +418,7 @@ else:
                             if st.session_state.user_coins >= cost:
                                 st.session_state.user_coins -= cost
                                 st.session_state.my_secret_room.append(item)
-                                st.success(f"Đã sắm sửa thành công {item}!")
+                                st.success(f"Đã mua thành công {item}!")
                                 st.rerun()
                             else:
                                 st.error("❌ Bạn không đủ số Coins tích lũy! Hãy chăm chỉ chỉ bài để kiếm thêm thu nhập nhé.")
@@ -371,4 +451,5 @@ else:
             st.session_state.last_question = None
             st.session_state.answered_current = False
             st.session_state.voice_active_text = ""
+            st.session_state.wrong_attempts = 0
             st.rerun()
