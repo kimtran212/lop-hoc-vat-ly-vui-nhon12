@@ -102,11 +102,11 @@ if "last_question" not in st.session_state: st.session_state.last_question = Non
 if "answered_current" not in st.session_state: st.session_state.answered_current = False
 if "voice_active_text" not in st.session_state: st.session_state.voice_active_text = ""
 if "wrong_attempts" not in st.session_state: st.session_state.wrong_attempts = 0
+if "goi_y_nang_cao" not in st.session_state: st.session_state.goi_y_nang_cao = "" # Biến mới lưu trữ phần còn thiếu
 
 TINH_HUONG_THUC_TE = [
     {"npc": "Bo Khù Khờ", "cau_hoi": "Tại sao khi tụi mình lặn xuống hồ bơi sâu một chút là tai lại bị ù và hơi đau vậy bạn?"},
     {"npc": "Bo Khù Khờ", "cau_hoi": "Tớ thấy người ta làm cái đập thủy điện thì cái chân đập ở dưới đáy lúc nào cũng to và dày hơn cái mặt đập ở trên. Sao không làm thẳng băng cho đẹp?"},
-
     {"npc": "Vy Chảnh Chọe", "cau_hoi": "Nè, một người lặn ở độ sâu 5m trong một cái hồ nhỏ với lặn ở độ sâu 5m ngoài biển khơi thì chỗ nào chịu áp suất lớn hơn? Trả lời sai tôi cười cho xem!"},
     {"npc": "Vy Chảnh Chọe", "cau_hoi": "Tôi đố bạn biết, tại sao khi bóp mạnh vào giữa một bịch sữa giấy đang mở miệng thì sữa lại bắn vọt thẳng lên trên? Áp suất truyền đi kiểu gì?"},
 ]
@@ -118,7 +118,7 @@ KHO_QUA_TANG = {
 }
 
 CỬA_HÀNG_NỘI_THẤT = {
-    "📚 Bàn Học Gỗ Cổ Điển": 50,
+    "📚 Bàn Học Gỗ Gổ Cổ Điển": 50,
     "💡 Đèn Bàn Phi Hành Gia Galaxy": 30,
     "🎸 Đàn Guitar Thùng Gỗ Sồi": 40,
     "🌱 Chậu Cây Tùng Bồng Lai": 20,
@@ -140,6 +140,7 @@ def boc_cau_hoi_ngau_nhien():
         st.session_state.current_emotion = "dang_hoi"
         st.session_state.answered_current = False
         st.session_state.wrong_attempts = 0
+        st.session_state.goi_y_nang_cao = "" # Reset gợi ý nâng cao câu mới
 
 if not st.session_state.start_game:
     st.markdown("<br><br>", unsafe_allow_html=True)
@@ -195,10 +196,6 @@ else:
             ---
             **⚖️ ĐỊNH LUẬT PASCAL**
             * **Nội dung định luật:** Áp suất tác dụng lên một chất lỏng chứa trong bình kín được chất lỏng truyền đi nguyên vẹn theo mọi hướng.
-
-
-
-
             * **Ý nghĩa thực tế:** Định luật Pascal cho phép truyền và khuếch đại lực thông qua chất lỏng. Chỉ cần tác dụng một lực nhỏ lên piston có diện tích nhỏ, ta có thể tạo ra lực lớn hơn nhiều ở piston có diện tích lớn!
             """)
             st.markdown("</div><br>", unsafe_allow_html=True)
@@ -268,16 +265,19 @@ else:
 
             st.markdown(f"<div style='background-color:#FFF3CD; padding:15px; border-radius:10px; border:1px solid #FFA000;'><b>NPC Hỏi:</b> {st.session_state.current_question}</div>", unsafe_allow_html=True)
 
+            # HỘP THOẠI GỢI Ý ĐÁP ÁN NÂNG CAO XUẤT HIỆN KHI ĐÚNG TRÊN 80% (>= 48 ĐIỂM NHƯNG CHƯA ĐẠT 60)
+            if st.session_state.goi_y_nang_cao:
+                st.info(f"💡 **GỢI Ý NÂNG CAO (Bạn đã đúng trên 80%):**\n\n{st.session_state.goi_y_nang_cao}")
 
-            if st.session_state.wrong_attempts == 1:
+            if st.session_state.wrong_attempts >= 1:
                 st.write("")
-                with st.popover("💡 Xem Gợi Ý Tư Duy", use_container_width=True):
+                with st.popover("💡 Xem Gợi Ý Tư Duy Cơ Bản", use_container_width=True):
                     st.markdown("""
                     **🧐 Gợi ý kích thích tư duy cho bạn:**
                     * Hãy nhớ lại công thức cốt lõi: $p = d \\cdot h$. Yếu tố nào đang thay đổi trong tình huống này?
-                    * Đối với câu hỏi về bịch sữa hoặc máy nén, hãy lưu ý cách áp suất truyền đi trong không gian kín!
-                    * Áp suất chất lỏng phụ thuộc vào những yếu tố nào? Các đại lượng như mật độ,độ sâu có ảnh hưởng đến áp suất chất lỏng không?
-                    * Càng lặn sâu, áp lực tác dụng lên tai thay đổi như thế nào? Điều gì xảy ra khi áp lực ở hai bên màng nhĩ không bằng nhau?
+                    * Đối với câu hỏi về bịch sữa hoặc máy nén, hãy lưu ý cách áp suất truyền đi trong không gian kín (Định luật Pascal)!
+                    * Áp suất chất lỏng phụ thuộc vào trọng lượng riêng và độ sâu ($h$). Biển và hồ nước ngọt có trọng lượng riêng $d$ giống nhau không?
+                    * Càng lặn sâu, áp lực tác dụng lên tai thay đổi như thế nào? Sự chênh lệch áp suất ngoài mặt màng nhĩ và trong hòm nhĩ gây ra hiện tượng gì?
                     """)
 
             if st.session_state.answered_current:
@@ -289,6 +289,7 @@ else:
                     st.session_state.current_emotion = "dang_hoi"
                     st.session_state.voice_active_text = ""
                     st.session_state.wrong_attempts = 0
+                    st.session_state.goi_y_nang_cao = ""
                     boc_cau_hoi_ngau_nhien()
                     st.rerun()
 
@@ -321,7 +322,10 @@ else:
             """, height=60)
 
             loi_giang_voice = st.text_input("", key="voice_bridge", label_visibility="collapsed")
-            loi_giang_text = st.chat_input("Gõ lời giảng giải hoặc bổ sung tại đây...")
+
+            loi_giang_text = None
+            if not st.session_state.answered_current:
+                loi_giang_text = st.chat_input("Gõ lời giảng giải hoặc bổ sung tại đây...")
 
             loi_giang = ""
             if loi_giang_voice and loi_giang_voice != st.session_state.voice_active_text:
@@ -334,19 +338,29 @@ else:
                 st.session_state.classroom_chat_history.append({"role": "user", "content": loi_giang})
 
                 unified_prompt = f"""
-                Bạn đang đóng vai nhân vật {st.session_state.current_npc} lớp 8 đối thoại với người dùng.
-                Tính cách nhân vật:
-                - Bo Khù Khờ: Nam sinh ngây ngô, dễ mến, sử dụng ngôn từ thân thiện,lịch sự. Nếu người dùng giảng đúng hoặc bổ sung ý kiến giúp hiểu ra vấn đề thì vô cùng nể phục, nếu họ giảng sai hoặc gõ vô nghĩa thì gãi đầu hoang mang vạch lỗi sai.
-                - Vy Chảnh Chọe: Nữ sinh kiêu kỳ, sử dụng ngôn từ lịch sự không được trả lời bất lịch sự. Nếu đúng hoặc bổ sung chuẩn thì hạ cái tôi khen ngợi hết lời công nhận mục tiêu ước mơ là {st.session_state.user_dream} của họ, nếu sai hoặc xếp chữ vô nghĩa thì mỉa mai sắc bén, chỉ ra lỗi sai.
+                Bạn đang đóng vai nhân vật học sinh lớp 8 tên là {st.session_state.current_npc} để chấm điểm bài giảng Vật lý của người dùng dựa theo ĐỘ CHÍNH XÁC KHOA HỌC (Thang điểm tối đa là 60).
 
-                Câu hỏi hiện tại của bạn: "{st.session_state.current_question}"
-                Ý kiến bổ sung/giảng bài mới nhất của người dùng: "{loi_giang}"
-                Toàn bộ lịch sử hội thoại của câu này: {st.session_state.classroom_chat_history}
+                Tính cách nhân vật phản hồi:
+                - Bo Khù Khờ: Nam sinh ngây ngô, dễ mến. Nếu giảng đúng (>=48 điểm) thì nể phục. Nếu sai (<48 điểm) thì hoang mang gãi đầu hỏi lại.
+                - Vy Chảnh Chọe: Nữ sinh kiêu kỳ. Nếu đúng (>=48 điểm) thì khen ngợi công nhận ước mơ {st.session_state.user_dream} của người dùng. Nếu sai thì mỉa mai sắc sảo.
 
-                Hãy phân tích nghiêm túc toàn bộ mạch hội thoại: Nếu họ lập luận bổ sung đúng bản chất khoa học giúp câu giải thích rõ ràng hơn, kết quả là "DUONG" và cho điểm từ 30-60 điểm cho lần bổ sung này. Nếu nói sai kiến thức vật lý cốt lõi hoặc gõ ký tự vô nghĩa, kết quả là "SAI" và điểm là 0.
+                CÂU HỎI HIỆN TẠI: "{st.session_state.current_question}"
+                LỜI GIẢNG MỚI NHẤT CỦA NGƯỜI DÙNG: "{loi_giang}"
+                LỊCH SỬ TRANH LUẬN TRƯỚC ĐÓ: {st.session_state.classroom_chat_history}
 
-                Bạn BẮT BUỘC phải trả về cấu trúc JSON thuần túy theo định dạng chính xác sau đây, không thêm bớt:
-                {{"ket_qua": "DUONG" hoặc "SAI", "diem_so": số_điểm, "loi_thoai_npc": "Nội dung phản hồi hoặc câu hỏi vặn vẹo tiếp theo của nhân vật dựa trên lời giảng mới"}}
+                TIÊU CHÍ CHẤM ĐIỂM (Tối đa 60 điểm):
+                - Hãy tính toán tỷ lệ % chính xác của câu trả lời dựa trên các từ khóa vật lý:
+                  + Đạt 60 điểm (100%): Giải thích hoàn hảo toàn bộ cơ chế, có công thức hoặc bản chất chuẩn xác.
+                  + Đạt từ 48 đến 59 điểm (Đã đúng trên 80%): Đã nói được ý chính cực tốt nhưng thiếu một vài chi tiết nhỏ để đạt điểm tối đa.
+                  + Dưới 48 điểm (<80%): Chưa giải thích đúng bản chất khoa học hoặc gõ linh tinh.
+
+                BẮT BUỘC TRẢ VỀ JSON THUẦN TÚY (TUYỆT ĐỐI không bao bọc trong ký tự ```json):
+                {{
+                    "ket_qua": "DUONG" (nếu diem_so >= 48) hoặc "SAI" (nếu diem_so < 48),
+                    "diem_so": số điểm chính xác từ 0 đến 60 dựa trên độ hoàn thiện kiến thức,
+                    "loi_thoai_npc": "Lời thoại phản hồi tương ứng dựa trên tính cách nhân vật",
+                    "thong_tin_con_thieu": "Nếu diem_so đạt từ 48-59 (trên 80%), hãy chỉ rõ những từ khóa hoặc ý nhỏ nào người dùng cần bổ sung để ăn trọn 60 điểm. Nếu điểm dưới 48 hoặc bằng 60, hãy để trống chuỗi này "
+                }}
                 """
 
                 phan_hoi_npc = "Tớ chưa hiểu lắm, bạn giảng giải kỹ hơn bằng bản chất khoa học được không?"
@@ -363,14 +377,25 @@ else:
                             clean_json = match.group(0)
                             data_eval = json.loads(clean_json)
 
+                            diem_cong = int(data_eval.get("diem_so", 0))
+                            con_thieu = data_eval.get("thong_tin_con_thieu", "").strip()
+
                             if data_eval.get("ket_qua") == "DUONG":
-                                diem_cong = int(data_eval.get("diem_so", 0))
                                 st.session_state.current_emotion = "khen_ngoi"
                                 st.session_state.wrong_attempts = 0
+                                st.session_state.answered_current = True
+
+                                # Nếu đúng trên 80% nhưng chưa tối đa, lưu thông tin gợi ý nâng cao
+                                if con_thieu:
+                                    st.session_state.goi_y_nang_cao = con_thieu
+                                else:
+                                    st.session_state.goi_y_nang_cao = ""
                             else:
                                 diem_cong = 0
                                 st.session_state.current_emotion = "gai_dau"
                                 st.session_state.wrong_attempts += 1
+                                st.session_state.answered_current = False
+                                st.session_state.goi_y_nang_cao = ""
 
                             phan_hoi_npc = data_eval.get("loi_thoai_npc", phan_hoi_npc)
                     except Exception as e:
@@ -381,7 +406,6 @@ else:
                 st.session_state.progress_score += diem_cong
                 st.session_state.user_coins += int(diem_cong / 2)
                 st.session_state.classroom_chat_history.append({"role": "assistant", "content": phan_hoi_npc})
-                st.session_state.answered_current = True
                 st.rerun()
 
     elif st.session_state.current_scene == "summary":
@@ -452,4 +476,5 @@ else:
             st.session_state.answered_current = False
             st.session_state.voice_active_text = ""
             st.session_state.wrong_attempts = 0
+            st.session_state.goi_y_nang_cao = ""
             st.rerun()
